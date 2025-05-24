@@ -1,6 +1,7 @@
 import SpriteKit
 import SwiftUI
 import Combine
+import UIKit
 
 class GameScene: SKScene {
     weak var gameViewModel: GameViewModel?
@@ -10,11 +11,12 @@ class GameScene: SKScene {
     private var gridNodes: [[SKShapeNode?]] = []
     private var blockSize: CGFloat = 0
     private var gridOrigin: CGPoint = .zero
+    private var previewBlockSize: CGFloat = 0
     
-    private var draggingShape: (shape: BlockShape, nodes: [SKShapeNode], offset: CGPoint)?
+    private var draggingShape: (shape: BlockShape, nodes: [SKNode], offset: CGPoint)?
     private var nextShapeOrigins: [UUID: CGPoint] = [:]
     
-    private var shapeNodes: [UUID: [SKShapeNode]] = [:] // Aktif şekil node'ları
+    private var shapeNodes: [UUID: [SKNode]] = [:] // Aktif şekil node'ları (ana SKNode)
     
     private var previewNodes: [SKShapeNode] = [] // Drag preview için
     
@@ -194,25 +196,48 @@ class GameScene: SKScene {
     }
     
     private func drawNextShapes() {
+        // Alt slot bölgesindeki eski preview/highlight node'larını temizle
+        let slotYThreshold = gridOrigin.y - blockSize * CGFloat(Self.gridSize)
+        for node in children {
+            if node.zPosition >= 15 && node.position.y < slotYThreshold {
+                node.removeFromParent()
+            }
+        }
         print("[DEBUG] drawNextShapes çağrıldı")
         guard let shapes = gameViewModel?.gameState.nextShapes else { print("[DEBUG] NextShapes yok veya nil"); return }
         print("[DEBUG] NextShapes: \(shapes)")
-        let previewBlockSize = blockSize * 0.7
-        let spacing: CGFloat = blockSize * 0.5
-        let totalWidth = CGFloat(shapes.count) * previewBlockSize * 4 + CGFloat(shapes.count - 1) * spacing
-        let startX = (size.width - totalWidth) / 2
-        let y = gridOrigin.y - blockSize * CGFloat(Self.gridSize) - blockSize * 2.2
-        for (i, shape) in shapes.enumerated() {
-            let origin = CGPoint(x: startX + CGFloat(i) * (previewBlockSize * 4 + spacing), y: y)
-            let nodes = drawShapePreview(shape, at: origin, blockSize: previewBlockSize)
-            shapeNodes[shape.id] = nodes
-            nextShapeOrigins[shape.id] = origin
+        previewBlockSize = blockSize * 0.52
+        let slotSpacing: CGFloat = blockSize * 2.7
+        let y = gridOrigin.y - blockSize * CGFloat(Self.gridSize) - blockSize * 1.5
+        let centerX = size.width / 2
+        let slotPositions: [CGPoint] = [
+            CGPoint(x: centerX - slotSpacing, y: y),
+            CGPoint(x: centerX, y: y),
+            CGPoint(x: centerX + slotSpacing, y: y)
+        ]
+        for i in 0..<3 {
+            if i < shapes.count {
+                let shape = shapes[i]
+                let origin = slotPositions[i]
+                // Şeklin kendi genişliği ve yüksekliğine göre ortala
+                let minCol = shape.positions.map { $0.column }.min() ?? 0
+                let maxCol = shape.positions.map { $0.column }.max() ?? 0
+                let minRow = shape.positions.map { $0.row }.min() ?? 0
+                let maxRow = shape.positions.map { $0.row }.max() ?? 0
+                let shapeWidth = CGFloat(maxCol - minCol + 1) * previewBlockSize
+                let shapeHeight = CGFloat(maxRow - minRow + 1) * previewBlockSize
+                let offset = CGPoint(x: -shapeWidth/2 + previewBlockSize/2, y: shapeHeight/2 - previewBlockSize/2)
+                let centeredOrigin = CGPoint(x: origin.x + offset.x, y: origin.y + offset.y)
+                let nodes = drawShapePreview(shape, at: centeredOrigin, blockSize: previewBlockSize)
+                shapeNodes[shape.id] = nodes
+                nextShapeOrigins[shape.id] = centeredOrigin
+            }
         }
     }
     
     // Küçük boyutlu jewel bloklarla preview çizimi
-    private func drawShapePreview(_ shape: BlockShape, at origin: CGPoint, blockSize: CGFloat) -> [SKShapeNode] {
-        var nodes: [SKShapeNode] = []
+    private func drawShapePreview(_ shape: BlockShape, at origin: CGPoint, blockSize: CGFloat) -> [SKNode] {
+        var nodes: [SKNode] = []
         for pos in shape.positions {
             let jewel = createJewelBlockNode(color: shape.color, size: blockSize, highlight: true)
             jewel.position = CGPoint(
@@ -221,15 +246,13 @@ class GameScene: SKScene {
             )
             jewel.zPosition = 15
             addChild(jewel)
-            if let mainShape = jewel.children.first as? SKShapeNode {
-                nodes.append(mainShape)
-            }
+            nodes.append(jewel)
         }
         return nodes
     }
     
-    private func drawShape(_ shape: BlockShape, at origin: CGPoint, forDrag: Bool) -> [SKShapeNode] {
-        var nodes: [SKShapeNode] = []
+    private func drawShape(_ shape: BlockShape, at origin: CGPoint, forDrag: Bool) -> [SKNode] {
+        var nodes: [SKNode] = []
         let jewelSize = forDrag ? blockSize * 1.08 : blockSize * 0.82
         for pos in shape.positions {
             let jewel = createJewelBlockNode(color: shape.color, size: jewelSize, highlight: true)
@@ -239,10 +262,7 @@ class GameScene: SKScene {
             )
             jewel.zPosition = forDrag ? 100 : 20
             addChild(jewel)
-            // Ana kareyi SKShapeNode olarak döndürmek için:
-            if let mainShape = jewel.children.first as? SKShapeNode {
-                nodes.append(mainShape)
-            }
+            nodes.append(jewel)
         }
         return nodes
     }
@@ -275,9 +295,9 @@ class GameScene: SKScene {
         guard let touch = touches.first, let shapes = gameViewModel?.gameState.nextShapes else { return }
         let location = touch.location(in: self)
         for shape in shapes {
-            if let nodes = shapeNodes[shape.id], nodes.contains(where: { $0.contains(location) }) {
+            if let nodes = shapeNodes[shape.id], let hitNode = nodes.first(where: { $0.contains(location) }) {
                 // Drag başlat
-                let offset = CGPoint(x: location.x - nodes[0].position.x, y: location.y - nodes[0].position.y)
+                let offset = CGPoint(x: location.x - hitNode.position.x, y: location.y - hitNode.position.y)
                 draggingShape = (shape, nodes, offset)
                 for node in nodes { node.zPosition = 200; node.alpha = 0.7 }
                 // Drag başlarken preview'u temizle
@@ -305,42 +325,79 @@ class GameScene: SKScene {
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first, let dragging = draggingShape else { draggingShape = nil; clearPreviewNodes(); return }
+        clearPreviewNodes()
+        guard let touch = touches.first, let currentDraggingInfo = draggingShape else {
+            draggingShape = nil
+            return
+        }
+        
         let location = touch.location(in: self)
-        // Grid'e bırakılacak pozisyonu bul
-        if let gridPos = previewGridPosition(for: dragging.shape, at: location), let gameViewModel = gameViewModel {
-            // Şeklin tüm blokları grid içinde mi kontrolü zaten previewGridPosition'da var
-            if gameViewModel.gameState.canPlace(shape: dragging.shape, at: gridPos) {
-                // Yerleştir
-                _ = gameViewModel.gameState.place(shape: dragging.shape, at: gridPos)
+        let slotYThreshold = gridOrigin.y - blockSize * CGFloat(Self.gridSize)
+        var shapePlacedSuccessfully = false
+        let shapeId = currentDraggingInfo.shape.id
+
+        if let gridPos = previewGridPosition(for: currentDraggingInfo.shape, at: location), let gameViewModel = gameViewModel {
+            if gameViewModel.gameState.canPlace(shape: currentDraggingInfo.shape, at: gridPos) {
+                let (_, clearedRows, clearedColumns, scoreGained) = gameViewModel.gameState.place(shape: currentDraggingInfo.shape, at: gridPos)
                 gameViewModel.objectWillChange.send()
-                reload()
-            } else {
-                // Geri döndür
-                if let origin = nextShapeOrigins[dragging.shape.id] {
-                    for (i, pos) in dragging.shape.positions.enumerated() {
-                        let x = origin.x + CGFloat(pos.column) * blockSize
-                        let y = origin.y - CGFloat(pos.row) * blockSize
-                        dragging.nodes[i].run(SKAction.move(to: CGPoint(x: x, y: y), duration: 0.2))
-                        dragging.nodes[i].zPosition = 20
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                if !clearedRows.isEmpty || !clearedColumns.isEmpty {
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    showClearEffects(rows: clearedRows, columns: clearedColumns, score: scoreGained)
+                }
+                shapePlacedSuccessfully = true
+            } 
+        }
+
+        if !shapePlacedSuccessfully {
+            // Shape not placed or invalid drop, return to original slot
+            if let origin = nextShapeOrigins[shapeId] {
+                for (i, pos) in currentDraggingInfo.shape.positions.enumerated() {
+                    let x = origin.x + CGFloat(pos.column) * previewBlockSize
+                    let y = origin.y - CGFloat(pos.row) * previewBlockSize
+                    
+                    let moveAction = SKAction.move(to: CGPoint(x: x, y: y), duration: 0.2)
+                    let alphaAction = SKAction.fadeAlpha(to: 1.0, duration: 0.2)
+                    let zPositionAction = SKAction.run { currentDraggingInfo.nodes[i].zPosition = 15 }
+                    let groupAction = SKAction.group([moveAction, alphaAction, zPositionAction])
+                    
+                    if currentDraggingInfo.nodes[i].parent != nil {
+                        currentDraggingInfo.nodes[i].run(groupAction)
+                    } 
+                }
+            }
+        }
+        
+        // Determine if a reload is needed
+        let needsReload = shapePlacedSuccessfully || (!shapePlacedSuccessfully && location.y < slotYThreshold)
+        
+        // Crucially, set draggingShape to nil AFTER all its dependent logic has executed.
+        draggingShape = nil
+
+        if needsReload {
+            reload()
+        }
+    }
+    
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        clearPreviewNodes()
+        if let dragging = draggingShape {
+            if let origin = nextShapeOrigins[dragging.shape.id] {
+                for (i, pos) in dragging.shape.positions.enumerated() {
+                    let shapeNodeBlockSize = previewBlockSize
+                    let x = origin.x + CGFloat(pos.column) * shapeNodeBlockSize
+                    let y = origin.y - CGFloat(pos.row) * shapeNodeBlockSize
+                    
+                    if dragging.nodes[i].parent != nil {
+                        dragging.nodes[i].removeAllActions()
+                        dragging.nodes[i].position = CGPoint(x: x, y: y)
+                        dragging.nodes[i].zPosition = 15 
                         dragging.nodes[i].alpha = 1.0
                     }
                 }
             }
-        } else {
-            // Geri döndür
-            if let origin = nextShapeOrigins[dragging.shape.id] {
-                for (i, pos) in dragging.shape.positions.enumerated() {
-                    let x = origin.x + CGFloat(pos.column) * blockSize
-                    let y = origin.y - CGFloat(pos.row) * blockSize
-                    dragging.nodes[i].run(SKAction.move(to: CGPoint(x: x, y: y), duration: 0.2))
-                    dragging.nodes[i].zPosition = 20
-                    dragging.nodes[i].alpha = 1.0
-                }
-            }
         }
         draggingShape = nil
-        clearPreviewNodes()
     }
     
     // --- Drag Preview Yardımcıları ---
@@ -382,5 +439,76 @@ class GameScene: SKScene {
     private func clearPreviewNodes() {
         for node in previewNodes { node.removeFromParent() }
         previewNodes.removeAll()
+    }
+    
+    // --- Efekt ve Haptic ---
+    private func showClearEffects(rows: [Int], columns: [Int], score: Int) {
+        // Satır ve sütunlardaki tüm taşlar için partikül efekti göster
+        let gridSize = Self.gridSize
+        var effectedPoints: [CGPoint] = []
+        for row in rows {
+            for col in 0..<gridSize {
+                effectedPoints.append(gridPositionToPoint(row: row, col: col))
+            }
+        }
+        for col in columns {
+            for row in 0..<gridSize {
+                effectedPoints.append(gridPositionToPoint(row: row, col: col))
+            }
+        }
+        for point in effectedPoints {
+            showParticleEffect(at: point)
+        }
+        // Puan animasyonu
+        if score > 0 {
+            showScoreAnimation(at: CGPoint(x: size.width/2, y: gridOrigin.y - blockSize * CGFloat(gridSize)/2), score: score)
+        }
+    }
+
+    private func showParticleEffect(at point: CGPoint) {
+        let emitter = SKEmitterNode(fileNamed: "ClearParticle.sks") ?? makeDefaultParticle()
+        emitter.position = point
+        emitter.zPosition = 200
+        addChild(emitter)
+        emitter.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.7),
+            SKAction.fadeOut(withDuration: 0.2),
+            SKAction.removeFromParent()
+        ]))
+    }
+
+    private func makeDefaultParticle() -> SKEmitterNode {
+        let emitter = SKEmitterNode()
+        emitter.particleTexture = SKTexture(imageNamed: "spark")
+        emitter.particleColor = .yellow
+        emitter.particleColorBlendFactor = 1
+        emitter.particleBirthRate = 120
+        emitter.particleLifetime = 0.4
+        emitter.particleSpeed = 60
+        emitter.particleAlpha = 0.8
+        emitter.particleAlphaRange = 0.2
+        emitter.particleScale = 0.18
+        emitter.particleScaleRange = 0.08
+        emitter.particleScaleSpeed = -0.2
+        emitter.particlePositionRange = CGVector(dx: 12, dy: 12)
+        return emitter
+    }
+
+    private func showScoreAnimation(at point: CGPoint, score: Int) {
+        let label = SKLabelNode(text: "+\(score)")
+        label.fontName = "AvenirNext-Bold"
+        label.fontSize = 36
+        label.fontColor = .yellow
+        label.position = point
+        label.zPosition = 300
+        label.alpha = 0.0
+        addChild(label)
+        let moveUp = SKAction.moveBy(x: 0, y: 40, duration: 1.0)
+        let fadeIn = SKAction.fadeAlpha(to: 1.0, duration: 0.15)
+        let fadeOut = SKAction.fadeAlpha(to: 0.0, duration: 0.5)
+        let group = SKAction.group([moveUp, SKAction.sequence([fadeIn, SKAction.wait(forDuration: 0.5), fadeOut])])
+        label.run(group) {
+            label.removeFromParent()
+        }
     }
 } 

@@ -6,13 +6,30 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		1722C3F52DDECE42009FE4F1 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 1722C3F42DDECE42009FE4F1 /* GoogleMobileAds */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		176DB6092DC01ED70080D7A4 /* BlockCrash.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BlockCrash.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		1722C3F72DDED0A2009FE4F1 /* Exceptions for "BlockCrash" folder in "BlockCrash" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 176DB6082DC01ED70080D7A4 /* BlockCrash */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		176DB60B2DC01ED70080D7A4 /* BlockCrash */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				1722C3F72DDED0A2009FE4F1 /* Exceptions for "BlockCrash" folder in "BlockCrash" target */,
+			);
 			path = BlockCrash;
 			sourceTree = "<group>";
 		};
@@ -23,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1722C3F52DDECE42009FE4F1 /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +83,7 @@
 			);
 			name = BlockCrash;
 			packageProductDependencies = (
+				1722C3F42DDECE42009FE4F1 /* GoogleMobileAds */,
 			);
 			productName = BlockCrash;
 			productReference = 176DB6092DC01ED70080D7A4 /* BlockCrash.app */;
@@ -94,6 +113,9 @@
 			);
 			mainGroup = 176DB6002DC01ED70080D7A4;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1722C3F32DDECE42009FE4F1 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 176DB60A2DC01ED70080D7A4 /* Products */;
 			projectDirPath = "";
@@ -255,6 +277,8 @@
 				DEVELOPMENT_TEAM = PZ22MVLYZ5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BlockCrash/Info.plist;
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = asdsadasdassd;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -267,6 +291,10 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.keremturkozu.BlockCrash;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -284,6 +312,8 @@
 				DEVELOPMENT_TEAM = PZ22MVLYZ5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BlockCrash/Info.plist;
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = asdsadasdassd;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -296,6 +326,10 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.keremturkozu.BlockCrash;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -324,6 +358,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1722C3F32DDECE42009FE4F1 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.4.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1722C3F42DDECE42009FE4F1 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1722C3F32DDECE42009FE4F1 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 176DB6012DC01ED70080D7A4 /* Project object */;
 }

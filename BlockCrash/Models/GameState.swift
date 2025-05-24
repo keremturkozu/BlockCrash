@@ -40,18 +40,19 @@ class GameState: ObservableObject {
         return true
     }
     
-    func place(shape: BlockShape, at origin: GridPosition) -> Bool {
-        guard canPlace(shape: shape, at: origin) else { return false }
+    func place(shape: BlockShape, at origin: GridPosition) -> (placed: Bool, clearedRows: [Int], clearedColumns: [Int], scoreGained: Int) {
+        guard canPlace(shape: shape, at: origin) else { return (false, [], [], 0) }
         for pos in shape.positions {
             let row = origin.row + pos.row
             let column = origin.column + pos.column
             grid[row][column] = shape.color
         }
         removeNextShape(shape)
-        clearCompletedLines()
+        let (clearedRows, clearedColumns) = clearCompletedLines()
+        let gained = (clearedRows.count + clearedColumns.count) * 100
         if nextShapes.isEmpty { generateNextShapes() }
         if !canPlaceAnyShape() { gameOver = true }
-        return true
+        return (true, clearedRows, clearedColumns, gained)
     }
     
     func removeNextShape(_ shape: BlockShape) {
@@ -60,23 +61,26 @@ class GameState: ObservableObject {
         }
     }
     
-    func clearCompletedLines() {
-        var cleared = 0
+    func clearCompletedLines() -> ([Int], [Int]) {
+        var clearedRows: [Int] = []
+        var clearedColumns: [Int] = []
         // Satırları kontrol et
         for row in 0..<Self.gridSize {
             if grid[row].allSatisfy({ $0 != nil }) {
                 for column in 0..<Self.gridSize { grid[row][column] = nil }
-                cleared += 1
+                clearedRows.append(row)
             }
         }
         // Sütunları kontrol et
         for column in 0..<Self.gridSize {
             if (0..<Self.gridSize).allSatisfy({ grid[$0][column] != nil }) {
                 for row in 0..<Self.gridSize { grid[row][column] = nil }
-                cleared += 1
+                clearedColumns.append(column)
             }
         }
-        score += cleared * 100
+        let gained = (clearedRows.count + clearedColumns.count) * 100
+        score += gained
+        return (clearedRows, clearedColumns)
     }
     
     func canPlaceAnyShape() -> Bool {
