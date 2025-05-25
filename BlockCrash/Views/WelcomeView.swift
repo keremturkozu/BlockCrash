@@ -196,8 +196,18 @@ struct WelcomeView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
             .fullScreenCover(isPresented: .init(
-                get: { !gameViewModel.isNewGame },
-                set: { if !$0 { gameViewModel.resetGame() } }
+                get: { 
+                    let shouldShow = !gameViewModel.isNewGame || gameViewModel.showingContinueAd
+                    print("🏠 WelcomeView: isNewGame=\(gameViewModel.isNewGame), showingContinueAd=\(gameViewModel.showingContinueAd), shouldShow=\(shouldShow)")
+                    return shouldShow
+                },
+                set: { newValue in
+                    print("🏠 WelcomeView: fullScreenCover set to \(newValue)")
+                    if !newValue && !gameViewModel.showingContinueAd { 
+                        print("🏠 WelcomeView: Calling resetGame()")
+                        gameViewModel.resetGame() 
+                    }
+                }
             )) {
                 GameView(gameViewModel: gameViewModel)
             }

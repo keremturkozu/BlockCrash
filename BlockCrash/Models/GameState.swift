@@ -5,7 +5,13 @@ class GameState: ObservableObject {
     static let gridSize = 8
     
     @Published var score: Int = 0
-    @Published var gameOver: Bool = false
+    @Published var gameOver: Bool = false {
+        didSet {
+            if oldValue != gameOver {
+                print("🎯 GameState: gameOver: \(oldValue) → \(gameOver)")
+            }
+        }
+    }
     @Published var grid: [[BlockColor?]] = Array(repeating: Array(repeating: nil, count: gridSize), count: gridSize)
     @Published var nextShapes: [BlockShape] = []
     
@@ -16,6 +22,7 @@ class GameState: ObservableObject {
     }
     
     func resetGame() {
+        print("🎯 GameState: resetGame() called")
         score = 0
         gameOver = false
         grid = Array(repeating: Array(repeating: nil, count: Self.gridSize), count: Self.gridSize)

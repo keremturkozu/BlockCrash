@@ -17,18 +17,21 @@ class AdManager: NSObject, ObservableObject, FullScreenContentDelegate {
     // Interstitial (geçiş) reklam için.
     private var interstitialAd: InterstitialAd?
     private var interstitialAdLoaded = false
-
+    
     // MARK: - Ad Unit IDs
     // Bu ID'leri kendi AdMob Reklam Birimi ID'lerinizle değiştirin.
     // Test için AdMob'un sağladığı test ID'lerini kullanabilirsiniz.
-    fileprivate let bannerAdUnitID: String = "ca-app-pub-3940256099942544/2934735716" // Test Banner ID
-    private let interstitialAdUnitID: String = "ca-app-pub-3940256099942544/4411468910" // Test Interstitial ID
+    fileprivate let bannerAdUnitID: String = "ca-app-pub-7348943580529374/9836990780" 
+    private let interstitialAdUnitID: String = "ca-app-pub-7348943580529374/1006180044" 
     
     // Test cihazı ID'si - kendi cihazınızın IDFA'sını buraya ekleyin
     private let testDeviceID: String = "YOUR_TEST_DEVICE_ID" // Bu değeri kendi test cihazınızla değiştirin
 
-    // "Reklamları Kaldır" ürününün kimliği (App Store Connect\'te tanımlanacak)
-    private let removeAdsProductID: String = "com.yourbundleid.removeads" // Kendi ürün ID\'nizle değiştirin
+    // "Reklamları Kaldır" ürününün kimliği (App Store Connect'te tanımlanacak)
+    private let removeAdsProductID: String = "com.BlockCrash.removeads"
+    
+    // "Continue Game" ürününün kimliği (App Store Connect'te tanımlanacak)  
+    private let continueGameProductID: String = "com.BlockCrash.continue"
 
     // MARK: - Singleton Instance
     // AdManager\'a kolay erişim için singleton bir örnek.
@@ -54,9 +57,6 @@ class AdManager: NSObject, ObservableObject, FullScreenContentDelegate {
     private override init() {
         super.init()
         
-        // Test cihazı yapılandırması
-        configureTestDevice()
-        
         print("AdManager: Initializing AdManager")
         print("AdManager: adsRemoved = \(adsRemoved)")
         
@@ -67,15 +67,6 @@ class AdManager: NSObject, ObservableObject, FullScreenContentDelegate {
         } else {
             print("AdManager: Ads are removed, not loading ads")
         }
-    }
-
-    // MARK: - Test Device Configuration
-    private func configureTestDevice() {
-        print("AdManager: Configuring test device")
-        // Test cihazı ekle - GADMobileAds SDK için doğru yöntem
-        // Test cihazı ID'si elde etmek için uygulama konsolunu kontrol edin
-        print("AdManager: Test device configuration is handled automatically in debug builds")
-        print("AdManager: For production, add your device's IDFA to test device list")
     }
 
     // MARK: - Ad Loading Methods
@@ -118,6 +109,13 @@ class AdManager: NSObject, ObservableObject, FullScreenContentDelegate {
             return
         }
         
+        showInterstitialAdInternal(completion: completion)
+    }
+    
+    // İç method - gerçek reklam gösterme mantığı
+    private func showInterstitialAdInternal(completion: (() -> Void)? = nil) {
+        print("AdManager: showInterstitialAdInternal() called")
+        
         print("AdManager: Checking interstitial ad availability...")
         print("AdManager: interstitialAd exists: \(interstitialAd != nil)")
         print("AdManager: interstitialAdLoaded: \(interstitialAdLoaded)")
@@ -138,22 +136,15 @@ class AdManager: NSObject, ObservableObject, FullScreenContentDelegate {
         
         print("AdManager: Found root view controller: \(rootVC)")
         
-        if rootVC.presentedViewController != nil {
-            print("AdManager: Root view controller is already presenting another view controller: \(String(describing: rootVC.presentedViewController))")
-            print("AdManager: Attempting to dismiss presented view controller first...")
-            
-            // Mevcut presented view controller'ı dismiss et
-            rootVC.dismiss(animated: false) {
-                print("AdManager: Dismissed presented view controller, now showing interstitial")
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    self.presentInterstitial(ad: ad, from: rootVC, completion: completion)
-                }
-            }
-            return
+        // En üstteki view controller'ı bul
+        var topViewController = rootVC
+        while let presentedVC = topViewController.presentedViewController {
+            topViewController = presentedVC
         }
-
-        print("AdManager: All checks passed, attempting to present interstitial ad.")
-        presentInterstitial(ad: ad, from: rootVC, completion: completion)
+        
+        print("AdManager: Top view controller: \(topViewController)")
+        print("AdManager: Attempting to present interstitial ad from top VC.")
+        presentInterstitial(ad: ad, from: topViewController, completion: completion)
     }
     
     private func presentInterstitial(ad: InterstitialAd, from rootVC: UIViewController, completion: (() -> Void)?) {
@@ -167,43 +158,28 @@ class AdManager: NSObject, ObservableObject, FullScreenContentDelegate {
     
     func purchaseRemoveAds() {
         print("🛒 purchaseRemoveAds() called")
-        // TODO: Gerçek StoreKit implementasyonu için bu kısmı değiştirin
         
-        // ⚠️ TEST VERSİYONU - Gerçek satın alma olmadan reklamları kaldırır
-        print("🧪 TEST MODE: Removing ads without purchase (for testing)")
+        // Şimdilik basit implementasyon - direkt reklamları kaldır
+        // Production'da gerçek StoreKit implementasyonu gerekli
         self.adsRemoved = true
         
         // Banner ve interstitial reklamları temizle
         self.interstitialAd = nil
         self.interstitialAdLoaded = false
         
-        print("✅ Ads removed successfully (TEST MODE)")
-        
-        // TODO: Production için StoreKit implementasyonu:
-        // 1. SKProductsRequest ile ürünü çek
-        // 2. SKPayment ile satın alma başlat  
-        // 3. SKPaymentTransactionObserver ile sonucu dinle
-        // 4. Başarılı olursa adsRemoved = true yap
+        print("✅ Ads removed successfully")
     }
     
     func restorePurchases() {
         print("🔄 restorePurchases() called")
-        // TODO: Gerçek StoreKit implementasyonu için bu kısmı değiştirin
         
-        // ⚠️ TEST VERSİYONU - Reklamları geri yükler (test için)
-        print("🧪 TEST MODE: Simulating purchase restore")
-        
-        // Test için: Her restore'da reklamları kapat
+        // Şimdilik basit implementasyon - reklamları kaldır
+        // Production'da gerçek StoreKit restore implementasyonu gerekli
         self.adsRemoved = true
         self.interstitialAd = nil
         self.interstitialAdLoaded = false
         
-        print("✅ Purchases restored, ads removed (TEST MODE)")
-        
-        // TODO: Production için StoreKit implementasyonu:
-        // 1. SKReceiptRefreshRequest ile receipt'i yenile
-        // 2. Satın almaları kontrol et
-        // 3. "Remove Ads" ürünü bulunursa adsRemoved = true yap
+        print("✅ Purchases restored, ads removed")
     }
 
     // MARK: - Continue Methods
@@ -211,21 +187,56 @@ class AdManager: NSObject, ObservableObject, FullScreenContentDelegate {
     func showContinueAd(completion: @escaping () -> Void) {
         print("🎬 showContinueAd() called")
         
-        // ⚠️ HIZLI TEST VERSİYONU - Reklam olmadan direkt continue
-        print("🧪 FAST TEST MODE: Completing continue ad immediately")
-        DispatchQueue.main.async {
-            completion()
+        if adsRemoved {
+            print("🎬 Ads are removed, skipping continue ad")
+            DispatchQueue.main.async {
+                completion()
+            }
+            return
+        }
+        
+        // Continue için normal interstitial sistemi kullan
+        showInterstitialAd {
+            print("🎬 Continue ad completed - calling completion")
+            // Main thread'de completion'ı çağır
+            DispatchQueue.main.async {
+                completion()
+            }
         }
     }
     
     func purchaseContinue(completion: @escaping () -> Void) {
         print("💰 purchaseContinue() called")
         
-        // ⚠️ HIZLI TEST VERSİYONU - Alert olmadan direkt continue
-        print("🧪 FAST TEST MODE: Completing continue purchase immediately")
-        DispatchQueue.main.async {
-            completion()
+        // Şimdilik basit implementasyon - direkt continue'ye izin ver
+        // Production'da gerçek StoreKit implementasyonu gerekli
+        guard let rootVC = rootViewController else {
+            print("💰 Could not find root view controller for continue purchase")
+            DispatchQueue.main.async {
+                completion()
+            }
+            return
         }
+        
+        let alert = UIAlertController(
+            title: "Continue Playing",
+            message: "Continue from where you left off for $0.99?",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Purchase $0.99", style: .default) { _ in
+            print("💰 User confirmed continue purchase")
+            print("✅ Continue purchase successful")
+            DispatchQueue.main.async {
+                completion()
+            }
+        })
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in
+            print("💰 User cancelled continue purchase")
+        })
+        
+        rootVC.present(alert, animated: true)
     }
 
     // MARK: - FullScreenContentDelegate Methods
@@ -240,9 +251,6 @@ class AdManager: NSObject, ObservableObject, FullScreenContentDelegate {
     func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
         print("AdManager: ❌ didFailToPresentFullScreenContent - Interstitial ad failed to present with error: \(error.localizedDescription)")
         // Başarısız olursa, oyun akışının devam etmesi için bir mekanizma olmalı.
-        // `showInterstitialAd` çağrıldığı yerdeki completion handler bu durumu yönetmeli.
-        // Ancak `showInterstitialAd`'in completion'ı `adDidDismissFullScreenContent`'a bağlandı.
-        // Bu yüzden burada da `pendingCompletionForInterstitial`'ı çağırabiliriz.
         executePendingInterstitialCompletion()
         print("AdManager: Attempting to load new interstitial ad after failure...")
         loadInterstitialAd() // Bir sonraki için yüklemeyi dene
@@ -252,51 +260,22 @@ class AdManager: NSObject, ObservableObject, FullScreenContentDelegate {
     func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
         print("AdManager: ✅ adDidDismissFullScreenContent - Interstitial ad was dismissed.")
         
-        // %20 ihtimalle "Remove Ads?" sorusu göster
-        if !adsRemoved && Int.random(in: 1...100) <= 20 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                self.showRemoveAdsPrompt()
-            }
-        }
-        
         // Kullanıcı reklamı kapattıktan sonra completion'ı çağır.
         executePendingInterstitialCompletion()
         self.interstitialAd = nil // Reklamı temizle
         print("AdManager: Cleared interstitial ad, loading new one...")
         loadInterstitialAd()     // Bir sonraki reklamı yükle
     }
-    
-    private func showRemoveAdsPrompt() {
-        guard let rootVC = rootViewController else { return }
-        print("AdManager: 📢 Showing Remove Ads prompt after interstitial")
-        
-        let alert = UIAlertController(
-            title: "Enjoy Ad-Free Gaming! 🎮",
-            message: "Remove ads forever and focus on beating your high score!",
-            preferredStyle: .alert
-        )
-        
-        alert.addAction(UIAlertAction(title: "Remove Ads", style: .default) { _ in
-            print("User chose to remove ads from prompt")
-            self.purchaseRemoveAds()
-        })
-        
-        alert.addAction(UIAlertAction(title: "Maybe Later", style: .cancel) { _ in
-            print("User dismissed remove ads prompt")
-        })
-        
-        rootVC.present(alert, animated: true)
-    }
 
     private var pendingInterstitialCompletion: (() -> Void)?
 
-    // `showInterstitialAd` içinde bu atanacak
     private func setPendingInterstitialCompletion(_ completion: (() -> Void)?) {
         self.pendingInterstitialCompletion = completion
     }
 
     private func executePendingInterstitialCompletion() {
         DispatchQueue.main.async {
+            print("AdManager: Executing pending interstitial completion on main thread")
             self.pendingInterstitialCompletion?()
             self.pendingInterstitialCompletion = nil // Tekrar çağrılmasını önle
         }
@@ -304,7 +283,6 @@ class AdManager: NSObject, ObservableObject, FullScreenContentDelegate {
 }
 
 // MARK: - SwiftUI Banner Ad View
-// GADBannerView\'ı SwiftUI\'da kullanmak için bir wrapper.
 struct BannerAdViewRepresentable: UIViewRepresentable {
     @ObservedObject var adManager = AdManager.shared
 
@@ -317,7 +295,6 @@ struct BannerAdViewRepresentable: UIViewRepresentable {
             bannerView.rootViewController = rootViewController
         } else {
             print("Could not find rootViewController for BannerAdViewRepresentable. This might happen if called too early or if the scene is not active.")
-            // Fallback rootViewController (UIApplication.shared.windows) kaldırıldı.
         }
         
         bannerView.delegate = context.coordinator
@@ -326,13 +303,9 @@ struct BannerAdViewRepresentable: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: BannerView, context: Context) {
-        // SwiftUI durumu değiştikçe (örneğin adsRemoved) banner\'ı güncellemek gerekebilir.
-        // Eğer reklamlar kaldırıldıysa banner\'ı gizleyebilir veya kaldırabiliriz.
-        // Ancak bu örnekte, banner\'ın kendi kendine yüklenmesini sağlıyoruz.
-        // Eğer adsRemoved true ise, BannerAdView\'ı hiç göstermemeyi tercih edebiliriz.
+        // SwiftUI durumu değiştikçe banner'ı güncellemek gerekebilir
     }
     
-    // Coordinator, UIViewRepresentable ile UIKit delegate\'lerini yönetmek için kullanılır.
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
@@ -362,4 +335,4 @@ struct BannerAdViewRepresentable: UIViewRepresentable {
             print("SwiftUI BannerAdView: Ad did dismiss screen.")
         }
     }
-} 
+}

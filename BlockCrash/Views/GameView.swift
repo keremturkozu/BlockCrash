@@ -66,28 +66,27 @@ struct GameView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         if gameViewModel.gameOver {
                             GameOverView(score: gameViewModel.score, onPlayAgain: {
-                                print("🎮 GameOverView callback triggered - Starting new game first")
-                                // Önce game over state'ini kaldır (GameOverView'ı dismiss et)
+                                print("🎮 GameOverView: Play Again button tapped")
                                 gameViewModel.startNewGame()
-                                
-                                // Ardından kısa bir delay ile interstitial reklamı göster
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                    print("🎮 Now showing interstitial ad after delay")
-                                    AdManager.shared.showInterstitialAd {
-                                        print("🎮 Interstitial ad completed")
-                                    }
-                                }
                             }, onContinueWithAd: {
                                 print("🎬 Continue with Ad selected")
+                                gameViewModel.showingContinueAd = true
                                 AdManager.shared.showContinueAd {
                                     print("🎬 Continue ad completed - resuming game")
-                                    gameViewModel.continueGame()
+                                    DispatchQueue.main.async {
+                                        gameViewModel.showingContinueAd = false
+                                        gameViewModel.continueGame()
+                                    }
                                 }
                             }, onContinueWithPurchase: {
                                 print("💰 Continue with Purchase selected")
+                                gameViewModel.showingContinueAd = true
                                 AdManager.shared.purchaseContinue {
                                     print("💰 Continue purchase completed - resuming game")
-                                    gameViewModel.continueGame()
+                                    DispatchQueue.main.async {
+                                        gameViewModel.showingContinueAd = false
+                                        gameViewModel.continueGame()
+                                    }
                                 }
                             })
                             .transition(.opacity)
